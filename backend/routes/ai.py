@@ -183,12 +183,7 @@ def ai_chat(current_user):
         if system_prompt:
             user_input = system_prompt + '\n\n' + user_input
 
-        # Redis 缓存（成员B）
-        cache_scope = str(data.get('subtask_id') or data.get('course_id') or 'global')
-        cached = redis_client.get_cached_ai_reply(current_user.id, cache_scope, user_input)
-        if cached is not None:
-            return jsonify({'reply': cached, 'usage': None, 'cached': True})
-
+        # Redis 缓存已关闭（教学场景需实时，2026-08-23 大王拍板）
         if XUNFEI_FLOW_TRAINING:
             result = call_xunfei_workflow(user_input, XUNFEI_FLOW_TRAINING, history)
         else:
@@ -196,8 +191,6 @@ def ai_chat(current_user):
         if result['error']:
             return jsonify({'error': result['error']}), 500
 
-        # 缓存结果（成员B）
-        redis_client.cache_ai_reply(current_user.id, cache_scope, user_input, result['content'])
         
         # 自动保存对话到数据库（供报告生成使用）
         subtask_id = data.get('subtask_id')
@@ -239,12 +232,7 @@ def ai_knowledge(current_user):
         if term_ctx:
             last_user = f'[终端环境]\n{term_ctx}\n[终端环境结束]\n\n学生问：{last_user}'
 
-        # Redis 缓存（成员B）
-        cache_scope = str(data.get('subtask_id') or data.get('course_id') or 'global')
-        cached = redis_client.get_cached_ai_reply(current_user.id, cache_scope, last_user)
-        if cached is not None:
-            return jsonify({'reply': cached, 'cached': True})
-
+        # Redis 缓存已关闭（教学场景需实时，2026-08-23 大王拍板）
         if XUNFEI_FLOW_KNOWLEDGE:
             result = call_xunfei_workflow(last_user, XUNFEI_FLOW_KNOWLEDGE)
         else:
@@ -252,8 +240,6 @@ def ai_knowledge(current_user):
         if result['error']:
             return jsonify({'error': result['error']}), 500
 
-        # 缓存结果（成员B）
-        redis_client.cache_ai_reply(current_user.id, cache_scope, last_user, result['content'])
         return jsonify({'reply': result['content']})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
