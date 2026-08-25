@@ -50,7 +50,7 @@ def call_xunfei_workflow(user_input, flow_id, history=None):
     }
 
     try:
-        resp = requests.post(XUNFEI_WORKFLOW_URL, json=body, headers=headers, timeout=120, stream=True)
+        resp = requests.post(XUNFEI_WORKFLOW_URL, json=body, headers=headers, timeout=300, stream=True)
         resp.raise_for_status()
 
         content = ''
@@ -107,7 +107,7 @@ def call_maas(user_input, max_tokens=800):
                 'temperature': 0.7,
                 'stream': False
             },
-            timeout=60
+            timeout=300
         )
         resp.raise_for_status()
         data = resp.json()
