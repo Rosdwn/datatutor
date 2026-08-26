@@ -571,6 +571,16 @@ async function loadMainData() {
             var progressData = await API.getProgress(courseId);
             currentSubtaskIdx = progressData.current_subtask_index || 0;
             subStatuses = progressData.subtask_statuses || {};
+            // 进入课程即开始：第一个未完成任务若 pending 自动 start（2026-08-26）
+            for (var ai = 0; ai < subtasks.length; ai++) {
+                var ast = subtasks[ai];
+                if (subStatuses[ast.id] !== 'completed') {
+                    if (subStatuses[ast.id] !== 'in_progress') {
+                        API.startSubtask(ast.id).then(function() { loadMainData(); }).catch(function(){});
+                    }
+                    break;
+                }
+            }
         } catch(e) { /* 进度暂不可用 */ }
 
         var loading = document.getElementById('sidebar-loading');

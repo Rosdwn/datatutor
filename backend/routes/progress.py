@@ -60,7 +60,8 @@ def start_subtask(current_user):
         subtask_id=data['subtask_id']
     ).first()
     if existing:
-        existing.started_at = datetime.utcnow()
+        if existing.started_at is None:
+            existing.started_at = datetime.utcnow()  # 已有开始时间不重置（2026-08-26 修复丢时长）
         existing.status = 'in_progress'
     else:
         tp = TaskProgress(
@@ -84,6 +85,20 @@ def complete_subtask(current_user):
         subtask_id=data['subtask_id']
     ).first()
     if tp:
+        if tp.started_at is None:
+            # 兜底：同课程前序任务完成时间；无前序用当前时间（2026-08-26）
+            from models import Subtask as _Subtask
+            cur = _Subtask.query.get(tp.subtask_id)
+            prev = None
+            if cur:
+                prev = (TaskProgress.query
+                        .join(_Subtask, TaskProgress.subtask_id == _Subtask.id)
+                        .filter(TaskProgress.student_id == current_user.id,
+                                TaskProgress.completed_at.isnot(None),
+                                _Subtask.course_id == cur.course_id,
+                                _Subtask.order_index < cur.order_index)
+                        .order_by(_Subtask.order_index.desc()).first())
+            tp.started_at = (prev.completed_at if prev and prev.completed_at else datetime.utcnow())
         tp.status = 'completed'
         tp.completed_at = datetime.utcnow()
     else:
@@ -111,13 +126,30 @@ def get_training_time(current_user):
     records = query.all()
     total_seconds = 0
     current_started_at = None
+    from models import Subtask as _Subtask
+    _sub_cache = {}
     for r in records:
-        if r.started_at and r.completed_at:
-            delta = (r.completed_at - r.started_at).total_seconds()
+        start = r.started_at
+        if start is None and r.completed_at:
+            # 统计兜底：NULL 开始时间用同课程前序任务完成时间（2026-08-26）
+            cur = _sub_cache.get(r.subtask_id) or _Subtask.query.get(r.subtask_id)
+            _sub_cache[r.subtask_id] = cur
+            if cur:
+                prev = (TaskProgress.query
+                        .join(_Subtask, TaskProgress.subtask_id == _Subtask.id)
+                        .filter(TaskProgress.student_id == current_user.id,
+                                TaskProgress.completed_at.isnot(None),
+                                _Subtask.course_id == cur.course_id,
+                                _Subtask.order_index < cur.order_index)
+                        .order_by(_Subtask.order_index.desc()).first())
+                if prev and prev.completed_at:
+                    start = prev.completed_at
+        if start and r.completed_at:
+            delta = (r.completed_at - start).total_seconds()
             total_seconds += max(0, int(delta))
-        if r.status == 'in_progress' and r.started_at:
-            current_started_at = r.started_at.isoformat()
-            elapsed = (datetime.utcnow() - r.started_at).total_seconds()
+        if r.status == 'in_progress' and start:
+            current_started_at = start.isoformat()
+            elapsed = (datetime.utcnow() - start).total_seconds()
             total_seconds += max(0, int(elapsed))
     return jsonify({
         'total_seconds': total_seconds,
