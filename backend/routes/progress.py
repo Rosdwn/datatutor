@@ -154,7 +154,7 @@ def get_training_time(current_user):
                 r.started_at = now
                 start = now
                 _session_reset = True
-            current_started_at = start.isoformat()
+            current_started_at = start.isoformat() + 'Z'  # UTC 标记，修前端时区解析（2026-08-26）
             elapsed = (now - start).total_seconds()
             total_seconds += max(0, int(elapsed))
     if _session_reset:
