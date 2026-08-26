@@ -126,6 +126,7 @@ def get_training_time(current_user):
     records = query.all()
     total_seconds = 0
     current_started_at = None
+    _session_reset = False
     from models import Subtask as _Subtask
     _sub_cache = {}
     for r in records:
@@ -148,9 +149,16 @@ def get_training_time(current_user):
             delta = (r.completed_at - start).total_seconds()
             total_seconds += max(0, int(delta))
         if r.status == 'in_progress' and start:
+            now = datetime.utcnow()
+            if (now - start).total_seconds() > 1800:  # 会话超时30分钟：退出前端后不计时（2026-08-26）
+                r.started_at = now
+                start = now
+                _session_reset = True
             current_started_at = start.isoformat()
-            elapsed = (datetime.utcnow() - start).total_seconds()
+            elapsed = (now - start).total_seconds()
             total_seconds += max(0, int(elapsed))
+    if _session_reset:
+        db.session.commit()
     return jsonify({
         'total_seconds': total_seconds,
         'current_started_at': current_started_at
