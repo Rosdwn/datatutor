@@ -55,23 +55,37 @@ def get_progress(current_user, course_id):
 def start_subtask(current_user):
     """开始一个子任务"""
     data = request.get_json()
-    existing = TaskProgress.query.filter_by(
-        student_id=current_user.id,
-        subtask_id=data['subtask_id']
-    ).first()
-    if existing:
-        if existing.started_at is None:
-            existing.started_at = datetime.utcnow()  # 已有开始时间不重置（2026-08-26 修复丢时长）
-        existing.status = 'in_progress'
-    else:
-        tp = TaskProgress(
+    from sqlalchemy.exc import IntegrityError
+    try:
+        existing = TaskProgress.query.filter_by(
             student_id=current_user.id,
-            subtask_id=data['subtask_id'],
-            status='in_progress',
-            started_at=datetime.utcnow(),
-        )
-        db.session.add(tp)
-    db.session.commit()
+            subtask_id=data['subtask_id']
+        ).first()
+        if existing:
+            if existing.started_at is None:
+                existing.started_at = datetime.utcnow()  # 已有开始时间不重置（2026-08-26 修复丢时长）
+            existing.status = 'in_progress'
+        else:
+            tp = TaskProgress(
+                student_id=current_user.id,
+                subtask_id=data['subtask_id'],
+                status='in_progress',
+                started_at=datetime.utcnow(),
+            )
+            db.session.add(tp)
+        db.session.commit()
+    except IntegrityError:
+        # 并发唯一键冲突：记录已被并发创建，转更新（2026-08-27 防重复）
+        db.session.rollback()
+        existing = TaskProgress.query.filter_by(
+            student_id=current_user.id,
+            subtask_id=data['subtask_id']
+        ).first()
+        if existing:
+            if existing.started_at is None:
+                existing.started_at = datetime.utcnow()
+            existing.status = 'in_progress'
+            db.session.commit()
     return jsonify({'message': '已开始'})
 
 
@@ -80,38 +94,50 @@ def start_subtask(current_user):
 def complete_subtask(current_user):
     """完成一个子任务"""
     data = request.get_json()
-    tp = TaskProgress.query.filter_by(
-        student_id=current_user.id,
-        subtask_id=data['subtask_id']
-    ).first()
-    if tp:
-        if tp.started_at is None:
-            # 兜底：同课程前序任务完成时间；无前序用当前时间（2026-08-26）
-            from models import Subtask as _Subtask
-            cur = _Subtask.query.get(tp.subtask_id)
-            prev = None
-            if cur:
-                prev = (TaskProgress.query
-                        .join(_Subtask, TaskProgress.subtask_id == _Subtask.id)
-                        .filter(TaskProgress.student_id == current_user.id,
-                                TaskProgress.completed_at.isnot(None),
-                                _Subtask.course_id == cur.course_id,
-                                _Subtask.order_index < cur.order_index)
-                        .order_by(_Subtask.order_index.desc()).first())
-            tp.started_at = (prev.completed_at if prev and prev.completed_at else datetime.utcnow())
-        tp.status = 'completed'
-        tp.completed_at = datetime.utcnow()
-    else:
-        tp = TaskProgress(
+    from sqlalchemy.exc import IntegrityError
+    try:
+        tp = TaskProgress.query.filter_by(
             student_id=current_user.id,
-            subtask_id=data['subtask_id'],
-            status='completed',
-            completed_at=datetime.utcnow(),
-        )
-        db.session.add(tp)
-    db.session.commit()
+            subtask_id=data['subtask_id']
+        ).first()
+        if tp:
+            if tp.started_at is None:
+                # 兜底：同课程前序任务完成时间；无前序用当前时间（2026-08-26）
+                from models import Subtask as _Subtask
+                cur = _Subtask.query.get(tp.subtask_id)
+                prev = None
+                if cur:
+                    prev = (TaskProgress.query
+                            .join(_Subtask, TaskProgress.subtask_id == _Subtask.id)
+                            .filter(TaskProgress.student_id == current_user.id,
+                                    TaskProgress.completed_at.isnot(None),
+                                    _Subtask.course_id == cur.course_id,
+                                    _Subtask.order_index < cur.order_index)
+                            .order_by(_Subtask.order_index.desc()).first())
+                tp.started_at = (prev.completed_at if prev and prev.completed_at else datetime.utcnow())
+            tp.status = 'completed'
+            tp.completed_at = datetime.utcnow()
+        else:
+            tp = TaskProgress(
+                student_id=current_user.id,
+                subtask_id=data['subtask_id'],
+                status='completed',
+                completed_at=datetime.utcnow(),
+            )
+            db.session.add(tp)
+        db.session.commit()
+    except IntegrityError:
+        # 并发唯一键冲突：记录已被并发创建，转更新（2026-08-27 防重复）
+        db.session.rollback()
+        tp2 = TaskProgress.query.filter_by(
+            student_id=current_user.id,
+            subtask_id=data['subtask_id']
+        ).first()
+        if tp2:
+            tp2.status = 'completed'
+            tp2.completed_at = datetime.utcnow()
+            db.session.commit()
     return jsonify({'message': '已完成'})
-
 
 @progress_bp.route('/training_time', methods=['GET'])
 @token_required
