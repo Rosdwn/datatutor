@@ -62,6 +62,9 @@ def start_subtask(current_user):
             subtask_id=data['subtask_id']
         ).first()
         if existing:
+            if existing.status == 'completed':
+                # 已完成任务不允许再开始，防状态回退导致耗时虚增（2026-08-28）
+                return jsonify({'message': '已完成，无需开始'})
             if existing.started_at is None:
                 existing.started_at = datetime.utcnow()  # 已有开始时间不重置（2026-08-26 修复丢时长）
             existing.status = 'in_progress'
@@ -82,10 +85,11 @@ def start_subtask(current_user):
             subtask_id=data['subtask_id']
         ).first()
         if existing:
-            if existing.started_at is None:
-                existing.started_at = datetime.utcnow()
-            existing.status = 'in_progress'
-            db.session.commit()
+            if existing.status != 'completed':
+                if existing.started_at is None:
+                    existing.started_at = datetime.utcnow()
+                existing.status = 'in_progress'
+                db.session.commit()
     return jsonify({'message': '已开始'})
 
 
@@ -115,8 +119,9 @@ def complete_subtask(current_user):
                                     _Subtask.order_index < cur.order_index)
                             .order_by(_Subtask.order_index.desc()).first())
                 tp.started_at = (prev.completed_at if prev and prev.completed_at else datetime.utcnow())
+            if tp.status != 'completed':
+                tp.completed_at = datetime.utcnow()  # 仅首次完成记录时间（2026-08-28 防重复完成刷新耗时）
             tp.status = 'completed'
-            tp.completed_at = datetime.utcnow()
         else:
             tp = TaskProgress(
                 student_id=current_user.id,
@@ -134,8 +139,9 @@ def complete_subtask(current_user):
             subtask_id=data['subtask_id']
         ).first()
         if tp2:
+            if tp2.status != 'completed':
+                tp2.completed_at = datetime.utcnow()
             tp2.status = 'completed'
-            tp2.completed_at = datetime.utcnow()
             db.session.commit()
     return jsonify({'message': '已完成'})
 
@@ -189,6 +195,25 @@ def get_training_time(current_user):
         'total_seconds': total_seconds,
         'current_started_at': current_started_at
     })
+
+
+@progress_bp.route('/reset', methods=['POST'])
+@token_required
+def reset_course_progress(current_user):
+    """重新开始本课程：删除该学生该课程全部进度记录（已生成报告保留）"""
+    data = request.get_json() or {}
+    course_id = data.get('course_id')
+    if not course_id:
+        return jsonify({'error': '缺少课程ID'}), 400
+    from models import Subtask
+    subtask_ids = [s.id for s in Subtask.query.filter_by(course_id=course_id).all()]
+    if subtask_ids:
+        TaskProgress.query.filter(
+            TaskProgress.student_id == current_user.id,
+            TaskProgress.subtask_id.in_(subtask_ids)
+        ).delete(synchronize_session=False)
+        db.session.commit()
+    return jsonify({'message': '已重置，可重新开始'})
 
 
 @progress_bp.route('/terminal_context', methods=['GET'])

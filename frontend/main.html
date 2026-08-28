@@ -160,6 +160,7 @@
 <div class="border-t border-slate-700/50 p-4" id="sidebar-files">
     <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-semibold">课程数据文件</div>
     <div class="text-slate-500 text-[11px]" id="sidebar-file-list">加载中...</div>
+    <button onclick="resetCourseProgress()" class="w-full mt-3 text-[11px] text-slate-400 hover:text-amber-400 border border-slate-600/60 rounded-lg py-1.5 transition-colors">↻ 重新开始本课程</button>
 </div>
 <!-- 底部进度圆环 -->
 <div class="p-6 border-t border-slate-800 bg-slate-900/30">
@@ -698,9 +699,11 @@ function updateProgress() {
 
 async function switchSubtask(idx) {
     currentSubtaskIdx = idx;
-    // 恢复完成按钮
+    // 已完成任务隐藏"完成"按钮，防重复完成（2026-08-28）
     var btn = document.getElementById('complete-btn');
-    if (btn) btn.style.display = '';
+    var stNow = subtasks[idx];
+    var isDone = stNow && subStatuses[stNow.id] === 'completed';
+    if (btn) btn.style.display = isDone ? 'none' : '';
     knowledgeInited = false;  // 切换子任务时重置知识面板记忆体
     knowledgeHistory = [];
     var km = document.getElementById('knowledge-messages');
@@ -1410,6 +1413,17 @@ function closeHistoryModal() { document.getElementById('history-modal').classLis
 
 // === 确认弹窗 ===
 var _confirmCallback = null;
+function resetCourseProgress() {
+    showConfirmModal('重新开始后，本课程全部任务进度和计时将清除（已生成的实训报告保留）。确定重新开始吗？', function() {
+        apiFetch('/progress/reset', { method: 'POST', body: JSON.stringify({ course_id: courseId }) })
+          .then(function() {
+              sessionStorage.removeItem('dt_auto_start_' + courseId);  // 清防重标记，刷新后自动开始任务1
+              window.location.reload();
+          })
+          .catch(function(e) { alert('重置失败：' + e.message); });
+    });
+}
+
 function showConfirmModal(message, onConfirm) {
     var modal = document.getElementById('confirm-modal');
     if (!modal) { if (confirm(message)) onConfirm(); return; }

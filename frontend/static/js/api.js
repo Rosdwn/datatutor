@@ -52,7 +52,7 @@ async function apiFetch(url, options) {
   var headers = { 'Content-Type': 'application/json' };
   if (options.headers) Object.assign(headers, options.headers);
   if (token) headers['Authorization'] = 'Bearer ' + token;
-  var res = await fetch(API_BASE + url, Object.assign({}, options, { headers: headers }));
+  var res = await fetch(API_BASE + url, Object.assign({}, options, { headers: headers, cache: 'no-store' }));
   if (res.status === 401) {
     localStorage.removeItem('datatutor_token');
     localStorage.removeItem('datatutor_user');
