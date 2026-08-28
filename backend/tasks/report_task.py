@@ -83,15 +83,17 @@ def generate_report_task(self, student_id, course_id):
 
             # 2. 组装 Prompt
             lines = [f'课程：{course.name}', f'目标：{course.description}', '']
-            total_minutes = 0
+            total_seconds = 0
             for st in subtasks:
                 prog = progresses.get(st.id)
                 status = '完成' if prog and prog.status == 'completed' else '已跳过（未计时）'
                 minutes = 0
                 if prog and prog.started_at and prog.completed_at:
-                    minutes = int((prog.completed_at - prog.started_at).total_seconds() / 60)
-                    total_minutes += minutes
+                    _secs = int((prog.completed_at - prog.started_at).total_seconds())
+                    minutes = int(_secs / 60)
+                    total_seconds += _secs
                 lines.append(f'- [{status}] {st.name}（{minutes}分钟）')
+            total_minutes = int(total_seconds / 60)  # 秒累加后统一转分钟（2026-08-28 修取整丢失）
             lines.append(f'\n总耗时：{total_minutes}分钟')
 
             # 聊天摘要
@@ -161,16 +163,18 @@ def _generate_report_sync(student_id, course_id):
             TaskProgress.student_id == student_id,
             TaskProgress.subtask_id.in_(subtask_ids)).all()}
         lines = [f'课程：{course.name}', f'目标：{course.description}', '']
-        total_minutes = 0; completed_count = 0
+        total_seconds = 0; completed_count = 0
         for st in subtasks:
             prog = progresses.get(st.id)
             status = '完成' if prog and prog.status == 'completed' else '未完成'
             if prog and prog.status == 'completed': completed_count += 1
             minutes = 0
             if prog and prog.started_at and prog.completed_at:
-                minutes = int((prog.completed_at - prog.started_at).total_seconds() / 60)
-                total_minutes += minutes
+                _secs = int((prog.completed_at - prog.started_at).total_seconds())
+                minutes = int(_secs / 60)
+                total_seconds += _secs
             lines.append(f'- [{status}] {st.name}（{minutes}分钟）')
+        total_minutes = int(total_seconds / 60)  # 秒累加后统一转分钟（2026-08-28 修取整丢失）
         lines.append(f'\n总耗时：{total_minutes}分钟 | 完成率：{completed_count}/{len(subtasks)}')
         chats = ChatMessage.query.filter(ChatMessage.student_id == student_id,
             ChatMessage.subtask_id.in_(subtask_ids)).order_by(ChatMessage.created_at).limit(20).all()

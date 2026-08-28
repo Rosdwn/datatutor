@@ -123,10 +123,24 @@ def complete_subtask(current_user):
                 tp.completed_at = datetime.utcnow()  # 仅首次完成记录时间（2026-08-28 防重复完成刷新耗时）
             tp.status = 'completed'
         else:
+            # 记录不存在：首次直接完成，补 started_at 兜底（前序任务完成时间/当前时间，2026-08-28）
+            from models import Subtask as _Subtask
+            _cur = _Subtask.query.get(data['subtask_id'])
+            _prev = None
+            if _cur:
+                _prev = (TaskProgress.query
+                         .join(_Subtask, TaskProgress.subtask_id == _Subtask.id)
+                         .filter(TaskProgress.student_id == current_user.id,
+                                 TaskProgress.completed_at.isnot(None),
+                                 _Subtask.course_id == _cur.course_id,
+                                 _Subtask.order_index < _cur.order_index)
+                         .order_by(_Subtask.order_index.desc()).first())
+            _start = (_prev.completed_at if _prev and _prev.completed_at else datetime.utcnow())
             tp = TaskProgress(
                 student_id=current_user.id,
                 subtask_id=data['subtask_id'],
                 status='completed',
+                started_at=_start,
                 completed_at=datetime.utcnow(),
             )
             db.session.add(tp)
