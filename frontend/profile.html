@@ -137,7 +137,7 @@ function loadStats() {
     document.getElementById('courses-list').innerHTML = html || '<div class="text-center py-6 text-slate-500 text-sm">暂无课程，<a href=\"hub.html\" class=\"text-indigo-400 hover:underline\">去选课</a></div>';
     setNum('stat-completed', completed);
     setNum('stat-rounds', rounds);
-    setNum('stat-hours', Math.round(hours));
+    setNum('stat-hours', Math.round(hours * 10) / 10);
     setNum('profile-level', Math.min(99, Math.floor(completed / 5) + 1));
   }).catch(function() {
     document.getElementById('courses-list').innerHTML = '<div class="text-center py-6 text-slate-500 text-sm">加载失败</div>';

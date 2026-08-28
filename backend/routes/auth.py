@@ -168,10 +168,10 @@ def get_profile(current_user):
             _total_sec += max(0, int((_p.completed_at - _p.started_at).total_seconds()))
         elif _p.status == 'in_progress' and _p.started_at:
             _total_sec += max(0, int((_dt.utcnow() - _p.started_at).total_seconds()))
-    total_minutes = _total_sec // 60
+    total_minutes = round(_total_sec / 60, 1)
     reports = Report.query.filter_by(student_id=current_user.id).all()
     if total_minutes == 0:
-        total_minutes = int(sum(r.total_time_hours for r in reports))
+        total_minutes = round(sum(r.total_time_hours for r in reports), 1)
     # 对话轮次 — 以 chat_messages 中 role='user' 的条数为准
     total_rounds = ChatMessage.query.filter_by(
         student_id=current_user.id,

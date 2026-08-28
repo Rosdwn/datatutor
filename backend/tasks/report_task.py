@@ -90,10 +90,10 @@ def generate_report_task(self, student_id, course_id):
                 minutes = 0
                 if prog and prog.started_at and prog.completed_at:
                     _secs = int((prog.completed_at - prog.started_at).total_seconds())
-                    minutes = int(_secs / 60)
+                    minutes = round(_secs / 60, 1)
                     total_seconds += _secs
                 lines.append(f'- [{status}] {st.name}（{minutes}分钟）')
-            total_minutes = int(total_seconds / 60)  # 秒累加后统一转分钟（2026-08-28 修取整丢失）
+            total_minutes = round(total_seconds / 60, 1)  # 秒累加后统一转分钟（2026-08-28；保留1位小数）
             lines.append(f'\n总耗时：{total_minutes}分钟')
 
             # 聊天摘要
@@ -171,10 +171,10 @@ def _generate_report_sync(student_id, course_id):
             minutes = 0
             if prog and prog.started_at and prog.completed_at:
                 _secs = int((prog.completed_at - prog.started_at).total_seconds())
-                minutes = int(_secs / 60)
+                minutes = round(_secs / 60, 1)
                 total_seconds += _secs
             lines.append(f'- [{status}] {st.name}（{minutes}分钟）')
-        total_minutes = int(total_seconds / 60)  # 秒累加后统一转分钟（2026-08-28 修取整丢失）
+        total_minutes = round(total_seconds / 60, 1)  # 秒累加后统一转分钟（2026-08-28；保留1位小数）
         lines.append(f'\n总耗时：{total_minutes}分钟 | 完成率：{completed_count}/{len(subtasks)}')
         chats = ChatMessage.query.filter(ChatMessage.student_id == student_id,
             ChatMessage.subtask_id.in_(subtask_ids)).order_by(ChatMessage.created_at).limit(20).all()

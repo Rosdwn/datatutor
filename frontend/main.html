@@ -399,7 +399,7 @@ function initTrainingHours() {
 function updateTrainingDisplay(total) {
     var el = document.getElementById('training-hours');
     var bar = document.getElementById('training-bar');
-    var minutes = Math.round(total / 60);
+    var minutes = (total / 60).toFixed(1);
     if (el) el.innerText = minutes + ' 分钟';
     if (bar) bar.style.width = Math.min((total / (600 * 60)) * 100, 100) + '%';
 }
@@ -572,21 +572,21 @@ async function loadMainData() {
             var progressData = await API.getProgress(courseId);
             currentSubtaskIdx = progressData.current_subtask_index || 0;
             subStatuses = progressData.subtask_statuses || {};
-            // 进入课程即开始：第一个未完成任务若 pending 自动 start（2026-08-26；8/27 加会话防重）
-            var _autoKey = 'dt_auto_start_' + courseId;
-            if (!sessionStorage.getItem(_autoKey)) {
-                for (var ai = 0; ai < subtasks.length; ai++) {
-                    var ast = subtasks[ai];
-                    if (subStatuses[ast.id] !== 'completed') {
-                        if (subStatuses[ast.id] !== 'in_progress') {
-                            API.startSubtask(ast.id).then(function() { loadMainData(); }).catch(function(){});
-                            sessionStorage.setItem(_autoKey, '1');
-                        }
-                        break;
+        } catch(e) { subStatuses = {}; /* 进度暂不可用，不阻断自动开始（2026-08-28） */ }
+        // 进入课程即开始：第一个未完成任务若 pending 自动 start（2026-08-26；8/27 会话防重；8/28 移出 try 防 getProgress 失败漏触发）
+        var _autoKey = 'dt_auto_start_' + courseId;
+        if (!sessionStorage.getItem(_autoKey)) {
+            for (var ai = 0; ai < subtasks.length; ai++) {
+                var ast = subtasks[ai];
+                if (subStatuses[ast.id] !== 'completed') {
+                    if (subStatuses[ast.id] !== 'in_progress') {
+                        API.startSubtask(ast.id).then(function() { loadMainData(); }).catch(function(){});
+                        sessionStorage.setItem(_autoKey, '1');
                     }
+                    break;
                 }
             }
-        } catch(e) { /* 进度暂不可用 */ }
+        }
 
         var loading = document.getElementById('sidebar-loading');
         if (loading) loading.classList.add('hidden');
