@@ -159,9 +159,19 @@ def get_profile(current_user):
     else:
         # 无进度数据时，从报告推算
         course_count = Report.query.filter_by(student_id=current_user.id).count()
-    # 总实训时长
-    reports = Report.query.filter_by(student_id=current_user.id).all()
-    total_minutes = int(sum(r.total_time_hours for r in reports))
+    # 总实训时长（分钟）：优先 task_progress 真实耗时，报告兜底（2026-08-28 修复未生成报告时显示0）
+    from datetime import datetime as _dt
+    _total_sec = 0
+    _progs = TaskProgress.query.filter_by(student_id=current_user.id).all()
+    for _p in _progs:
+        if _p.started_at and _p.completed_at:
+            _total_sec += max(0, int((_p.completed_at - _p.started_at).total_seconds()))
+        elif _p.status == 'in_progress' and _p.started_at:
+            _total_sec += max(0, int((_dt.utcnow() - _p.started_at).total_seconds()))
+    total_minutes = _total_sec // 60
+    if total_minutes == 0:
+        reports = Report.query.filter_by(student_id=current_user.id).all()
+        total_minutes = int(sum(r.total_time_hours for r in reports))
     # 对话轮次 — 以 chat_messages 中 role='user' 的条数为准
     total_rounds = ChatMessage.query.filter_by(
         student_id=current_user.id,
