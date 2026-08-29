@@ -598,7 +598,7 @@ async function my_loadAnalytics() {
     var reportsMap = {};
     try {
       var rr = await apiFetch('/reports?course_id='+my_currentCourseId);
-      (rr.reports||[]).forEach(function(r) { reportsMap[r.student_id] = r; });
+      (rr.reports||[]).forEach(function(r) { if (!reportsMap[r.student_id]) reportsMap[r.student_id] = r; });  // 只保留每个学生最新报告(desc最新在前, 2026-08-29 修旧报告覆盖)
     } catch(e) {}
 
     var sh = '';

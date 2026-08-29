@@ -45,11 +45,17 @@ def _generate_report_sync(student_id, course_id):
         else:
             result = call_maas(user_input, max_tokens=2000)
         if result.get('error'): raise RuntimeError(result['error'])
-        # 从 AI 输出中提取等级（如 "**等级**：D"）
+        # 从 AI 输出中提取等级（兼容 "等级：D" / "综合评价：D级" / "评级：D" 等写法，2026-08-29 修解析失败回退完成率致评级虚高）
         import re
-        m = re.search(r'等级\**\s*[：:]\s*([A-D])', result['content'])
-        if m: grade = m.group(1)
-        else:
+        grade = None
+        for _pat in (r'(?:等级|评级|综合评价|综合评级|总评)\s*\*{0,2}\s*[：:]\s*([A-D])',
+                     r'(?:等级|评级|综合评价|综合评级|总评)[^\n]{0,6}?([A-D])\s*级',
+                     r'([A-D])\s*级'):
+            _m = re.search(_pat, result['content'])
+            if _m:
+                grade = _m.group(1)
+                break
+        if not grade:
             rate = completed_count / len(subtasks) if subtasks else 0
             if rate >= 0.9: grade = 'A'
             elif rate >= 0.8: grade = 'B'
