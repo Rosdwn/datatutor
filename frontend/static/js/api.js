@@ -301,20 +301,11 @@ var API = {
   },
 
   // ---- 实训报告 ----
-  generateReport: function(courseId) {
-    return apiFetch('/reports/generate', {
-      method: 'POST',
-      body: JSON.stringify({ course_id: courseId })
-    });
-  },
   generateReportAsync: function(courseId) {
     return apiFetch('/reports/generate', {
       method: 'POST',
       body: JSON.stringify({ course_id: courseId })
     });
-  },
-  getTaskStatus: function(taskId) {
-    return apiFetch('/reports/task/' + taskId);
   },
   listReports: function() {
     return apiFetch('/reports');

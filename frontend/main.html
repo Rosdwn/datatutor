@@ -1303,17 +1303,7 @@ function clearCurrentChat() {
     document.getElementById('chat-messages').innerHTML = '';
 }
 // === 生成实训报告 ===
-// 成员D：Celery 异步报告生成（WebSocket 进度 + 轮询兜底）
-var reportTaskId = null;
-var reportPollTimer = null;
-var REPORT_STAGE_TEXT = {
-    started: 'AI 正在生成实训报告...',
-    collecting: '正在收集实训数据...',
-    generating: 'AI 正在撰写报告，约需 10-30 秒...',
-    saving: '报告生成完成，正在保存...',
-    completed: '报告已生成',
-    failed: '生成失败'
-};
+// 同步生成报告，前端展示 AI 生成进度提示
 async function generateReport() {
     var modal = document.getElementById('report-modal');
     var content = document.getElementById('report-content');
@@ -1333,33 +1323,6 @@ async function generateReport() {
 function renderReportLoading(message) {
     var content = document.getElementById('report-content');
     content.innerHTML = '<div class="text-center py-12"><iconify-icon icon="lucide:loader" class="animate-spin text-3xl text-emerald-400"></iconify-icon><p class="text-slate-500 mt-3">' + (message || '报告生成已加入队列...') + '</p></div>';
-}
-function startReportPolling() {
-    if (reportPollTimer) clearInterval(reportPollTimer);
-    reportPollTimer = setInterval(function() {
-        if (!reportTaskId) { clearInterval(reportPollTimer); return; }
-        API.getTaskStatus(reportTaskId).then(function(t) {
-            if (t.state === 'SUCCESS') {
-                clearInterval(reportPollTimer);
-                document.getElementById('report-content').innerHTML = '<div class="text-sm text-slate-300 leading-relaxed prose prose-invert max-w-none">' + marked.parse(t.data.content) + '</div>';
-            } else if (t.state === 'FAILURE') {
-                clearInterval(reportPollTimer);
-                document.getElementById('report-content').innerHTML = '<div class="text-red-400 text-sm text-center">生成失败</div>';
-            }
-        }).catch(function(){});
-    }, 2000);
-}
-// SocketIO 进度监听
-if (termSocket && typeof termSocket.on === 'function') {
-    termSocket.on('report_progress', function(p) {
-        var stage = p.stage || 'started';
-        if (stage === 'completed' && p.report) {
-            clearInterval(reportPollTimer);
-            document.getElementById('report-content').innerHTML = '<div class="text-sm text-slate-300 leading-relaxed prose prose-invert max-w-none">' + marked.parse(p.report) + '</div>';
-        } else {
-            renderReportLoading(REPORT_STAGE_TEXT[stage] || stage);
-        }
-    });
 }
 function closeReportModal() { document.getElementById('report-modal').classList.add('hidden'); }
 

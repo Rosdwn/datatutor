@@ -1,4 +1,4 @@
-"""报告路由 — 异步 Celery 版（成员D）"""
+"""报告路由（成员D）"""
 from flask import Blueprint, request, jsonify
 from routes.auth import token_required, teacher_required
 from models import db, Report, Course
@@ -22,22 +22,6 @@ def generate_report(current_user):
         return jsonify({'message': '报告已生成', 'content': content, 'grade': grade})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-@reports_bp.route('/task/<task_id>', methods=['GET'])
-@token_required
-def get_task_status(current_user, task_id):
-    """轮询任务状态（成员D：WebSocket 未命中时的兜底）"""
-    from tasks.report_task import generate_report_task
-    task = generate_report_task.AsyncResult(task_id)
-    if task.state == 'PENDING':
-        return jsonify({'state': 'PENDING'})
-    elif task.state == 'SUCCESS':
-        return jsonify({'state': 'SUCCESS', 'data': task.result})
-    elif task.state == 'FAILURE':
-        return jsonify({'state': 'FAILURE', 'error': str(task.info)})
-    else:
-        return jsonify({'state': task.state})
 
 
 @reports_bp.route('', methods=['GET'])

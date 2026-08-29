@@ -11,6 +11,5 @@ requests>=2.31
 paramiko>=3.4
 pymysql>=1.1
 redis>=5.0
-celery[redis]>=5.3
 prometheus-client>=0.21
 Pillow>=10.0
