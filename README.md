@@ -6,7 +6,7 @@
 
 | 功能 | 说明 |
 |------|------|
-| AI 实训副驾 | 终端内实时对话辅导（讯飞 Training Agent），对话自动保存供Report Agent使用 |
+| AI 实训副驾 | 终端内实时对话辅导（讯飞 Training Agent），对话自动保存供 Report Agent 使用 |
 | AI 课程生成 | 讯飞Teacher Agent 自动生成实训课程和子任务 |
 | Docker 隔离实训 | 每个学生独立容器，工具包宿主机挂载（镜像瘦身至229MB） |
 | 多角色管理 | 学生/教师/管理员三端，课程班级子任务全生命周期 |
@@ -17,9 +17,9 @@
 
 ## 技术栈
 
-- 后端: Python 3.13 / Flask / Flask-SocketIO / SQLAlchemy / Celery
+- 后端: Python 3.8+ / Flask / Flask-SocketIO / SQLAlchemy
 - 数据库: MySQL 8.0 / Redis 7
-- AI 引擎: 4个讯飞星辰工作流 Agent API
+- AI 引擎: 讯飞星辰 Agent 平台 4 个工作流 Agent + MaaS 兜底
 - 容器化: Docker / Docker Compose
 - 前端: HTML5 / Tailwind CSS / Iconify / Socket.IO
 
@@ -45,7 +45,7 @@
 
 > **注意**：应用容器需挂载 `-v /var/run/docker.sock:/var/run/docker.sock` 才能创建学生容器。
 
-11 门课程预置安装包: Hadoop, Spark, Hive, Kafka, Flink, ZooKeeper, HBase, Flume, Sqoop, Storm
+10 类大数据组件安装包预置: Hadoop, Spark, Hive, Kafka, Flink, ZooKeeper, HBase, Flume, Sqoop, Storm
 
 ## 快速启动
 
@@ -68,7 +68,7 @@ datatutor/
 ├── backend/
 │   ├── routes/         ai.py / auth.py / courses.py / chat.py / reports.py ...
 │   ├── terminal_ws/    SSH WebSocket 终端
-│   └── tasks/          异步报告生成
+│   └── tasks/          报告生成（同步）
 ├── frontend/
 │   ├── static/
 │   │   └── js/
