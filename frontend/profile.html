@@ -4,8 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>个人中心 - 数智实训平台</title>
-<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
-<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<script src="/static/vendor/tailwindcss.js"></script>
+<script src="/static/vendor/iconify-icon.min.js"></script>
 <style>
   body { background: #09090B; min-height: 100vh; font-family: 'Inter',-apple-system,sans-serif; }
   .dot-bg { background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0); background-size: 24px 24px; }
@@ -109,7 +109,7 @@ var homePage = 'hub.html';
   document.getElementById('profile-name').innerText = user.display_name || user.username || (user.role === 'teacher' ? '教师' : '学生');
   document.getElementById('profile-username').innerText = '@' + (user.username || '—');
   if (user.avatar_url) document.getElementById('avatar-img').src = user.avatar_url;
-  else document.getElementById('avatar-img').src = 'https://modao.cc/agent-py/media/generated_images/2026-06-26/a8854783ac184603b89311d2a4851970.jpg';
+  else document.getElementById('avatar-img').src = '/static/img/avatar2.jpg';
 })();
 
 function setNum(id, v) {

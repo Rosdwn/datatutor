@@ -6,8 +6,8 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>实训空间 - 数智实训平台</title>
 <link rel="icon" type="image/png" href="/static/img/logo.png"/>
-<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
-<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<script src="/static/vendor/tailwindcss.js"></script>
+<script src="/static/vendor/iconify-icon.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
@@ -15,7 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.min.js"></script>
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        @import url('/static/fonts/inter_full.css');
         
         body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         .mono { font-family: 'JetBrains Mono', monospace; }
@@ -121,7 +121,7 @@
 <!-- 用户中心 -->
 <div class="relative ml-2">
 <button class="flex items-center gap-2 p-1 pl-1 pr-2 hover:bg-white/5 rounded-full border border-white/10 transition-all" id="user-menu-btn" onclick="toggleUserMenu()">
-<img alt="User" class="w-7 h-7 rounded-full object-cover border border-lime-400/30" src="https://modao.cc/agent-py/media/generated_images/2026-06-26/a8854783ac184603b89311d2a4851970.jpg"/>
+<img alt="User" class="w-7 h-7 rounded-full object-cover border border-lime-400/30" src="/static/img/avatar2.jpg"/>
 <span class="text-sm font-medium text-zinc-300" id="display-username">学生</span>
 <iconify-icon class="text-zinc-500 text-xs" icon="lucide:chevron-down"></iconify-icon>
 </button>

@@ -20,11 +20,16 @@ def _get_class_student_progress(class_id, course_id):
     result = []
     for sid, dname, uname in students:
         name = dname or uname
-        completed = TaskProgress.query.filter(
-            TaskProgress.student_id == sid,
-            TaskProgress.subtask_id.in_(subtask_ids) if subtask_ids else [],
-            TaskProgress.status == 'completed'
-        ).count()
+        if subtask_ids:
+            completed = TaskProgress.query.filter(
+                TaskProgress.student_id == sid,
+                TaskProgress.subtask_id.in_(subtask_ids),
+                TaskProgress.status == 'completed'
+            ).count()
+        else:
+            # 该课程尚未生成子任务，完成数必然为 0
+            # （注意：不能把空列表传给 filter()，SQLAlchemy 2.x 会抛 ArgumentError）
+            completed = 0
         result.append({'name': name, 'completed': completed, 'total': total})
     result.sort(key=lambda x: -x['completed'])
     return result, len(students)
